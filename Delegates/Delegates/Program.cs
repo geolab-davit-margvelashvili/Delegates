@@ -1,190 +1,132 @@
 ﻿namespace Delegates;
 
-internal delegate bool ProductChecker(Product product);
+internal delegate TResult Function<T1, T2, TResult>(T1 a, T2 b);
 
-internal delegate bool CustomPredicate<T>(T element);
+internal delegate TResult Function<T1, TResult>(T1 a);
+
+internal delegate TResult Function<TResult>();
+
+internal class TestClass<T>
+{
+    public T TestProp { get; set; }
+}
 
 internal class Program
 {
+    private static int Sum(int a, int b)
+    {
+        return a + b;
+    }
+
+    private static int Multiply(int a, int b)
+    {
+        return a * b;
+    }
+
     private static void Main(string[] args)
     {
-        // დაწერეთ ფუნქცია რომელიც ლისტში იპოვის ობიექტს
+        //DelegatesExample1.Run();
 
-        var products = new List<Product>
-        {
-            new Product()
-            {
-                Id = 1,
-                Manufacturer = "Microsoft",
-                Name = "Surface Book"
-            },
-            new Product()
-            {
-                Id = 2,
-                Manufacturer = "Microsoft",
-                Name = "Surface Laptop"
-            },
+        TestClass<int> test = new TestClass<int>();
 
-            new Product()
-            {
-                Id = 3,
-                Manufacturer = "Apple",
-                Name = "Iphone"
-            },
-            new Product()
-            {
-                Id = 4,
-                Manufacturer = "Microsoft",
-                Name = "Windows 11"
-            },
-            new Product()
-            {
-                Id = 5,
-                Manufacturer = "Apple",
-                Name = "Macbook"
-            }
-        };
+        var numbers = new List<int> { -1, 10, 20, 15, -7, 50 };
 
-        var product = FindProduct(products, ProductIdChecker);
-        product = FindProduct(products, ProductNameChecker);
+        var sum = Aggregate(numbers, 0, Sum);
+        var multiple = Aggregate(numbers, 1, Multiply);
 
-        ProductChecker check = product => product.Id == 3;
+        var min = FindMin(numbers);
+        min = Aggregate(numbers, numbers[0], (result, number) => number < result ? number : result);
+        var max = Aggregate(numbers, numbers[0], Max);
 
-        FindProduct(products, check);
-        FindProduct(products, product => product.Id == 3);
+        var firstNegative = Find(numbers, number => number < 0);
+        var firstPositive = Find(numbers, number => number > 0);
+        var firstPositiveOdd = Find(numbers, number => number > 0 && number % 2 == 1);
+        var allNegatives = FindAll(numbers, n => n < 0);
 
-        products.Find(ProductIdChecker);
+        var productService = new ProductService();
+        var products = productService.GetProducts();
 
-        products.Find(p => p.Name == "Iphone");
+        var prices = Transform(products, product => product.Price);
+        var totalPrice = Aggregate(prices, 0, (a, b) => a + b);
 
-        product = FindProduct(products, p => p.Name == "Iphone");
-        product = FindProduct2(products, p => p.Manufacturer == "Microsoft");
-        product = Find(products, p => p.Manufacturer == "Microsoft");
-
-        var numbersSet = new HashSet<int> { 1, 2, 3, 4, 5, 6, 11, 12, 13, 15 };
-        var numbersList = new HashSet<int> { 1, 2, 3, 4, 5, 6, 11, 12, 13, 15 };
-
-        var number = Find(numbersSet, n => n < 0);
-        number = Find(numbersSet, n => n > 10 && n % 2 == 0);
-        number = Find(numbersList, n => n < 0);
-
-        Console.Write("Enter Manufacturer: ");
-        var manufacturer = Console.ReadLine();
-        product = Find(products, p => p.Manufacturer == manufacturer);
-
-        int a = 10;
-        int b = 20;
-        Sum(a, b);
-
-        Sum(10, 20);
+        prices = products.ConvertAll(product => product.Price);
+        totalPrice = Aggregate(prices, 0, (a, b) => a + b);
     }
 
-    private static int Sum(int number1, int number2) => number1 + number2;
-
-    private static bool ProductIdChecker(Product product) => product.Id == 3;
-
-    private static bool ProductNameChecker(Product product)
+    private static List<TResult> Transform<TSource, TResult>(List<TSource> source, Func<TSource, TResult> selector)
     {
-        return product.Name == "Iphone";
+        var result = new List<TResult>();
+        foreach (var item in source)
+        {
+            TResult value = selector(item);
+            result.Add(value);
+        }
+        return result;
     }
 
-    public static Product FindProduct(List<Product> source, ProductChecker check)
+    private static int Min(int result, int number) => number < result ? number : result;
+
+    private static int Max(int result, int number) => number > result ? number : result;
+
+    private static int FindMin(List<int> numbers)
     {
-        foreach (var element in source)
+        int result = numbers[0];
+
+        foreach (var number in numbers)
         {
-            if (check(element))
-            {
-                return element;
-            }
+            result = number < result ? number : result;
+        }
+        return result;
+    }
+
+    private static int FindMax(List<int> numbers)
+    {
+        int result = numbers[0];
+
+        foreach (var number in numbers)
+        {
+            result = number > result ? number : result;
+        }
+        return result;
+    }
+
+    public static T Aggregate<T>(List<T> numbers, T seed, Func<T, T, T> function)
+    {
+        T result = seed;
+
+        foreach (var number in numbers)
+        {
+            result = function(result, number);
         }
 
-        return null;
+        return result;
     }
 
-    public static Product FindProduct2(List<Product> source, CustomPredicate<Product> check)
+    public static T Find<T>(List<T> collection, Func<T, bool> match)
     {
-        foreach (var element in source)
+        foreach (var item in collection)
         {
-            if (check(element))
+            if (match(item))
             {
-                return element;
-            }
-        }
-
-        return null;
-    }
-
-    public static T Find<T>(IEnumerable<T> source, CustomPredicate<T> check)
-    {
-        foreach (var element in source)
-        {
-            if (check(element))
-            {
-                return element;
+                return item;
             }
         }
 
         return default;
     }
-}
 
-public class Product
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Manufacturer { get; set; }
-
-    public override bool Equals(object? obj)
+    public static List<T> FindAll<T>(List<T> collection, Func<T, bool> match)
     {
-        if (obj is Product other)
+        List<T> result = new List<T>();
+
+        foreach (var item in collection)
         {
-            return Id == other.Id;
+            if (match(item))
+            {
+                result.Add(item);
+            }
         }
 
-        return false;
-    }
-}
-
-public class ProductIdEqualityComparer : IEqualityComparer<Product>
-{
-    public bool Equals(Product? x, Product? y)
-    {
-        if (x == y)
-            return true;
-
-        if (x is null && y is not null)
-            return false;
-
-        if (x is not null && y is null)
-            return false;
-
-        return x.Id == y.Id;
-    }
-
-    public int GetHashCode(Product obj)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class ProductNameEqualityComparer : IEqualityComparer<Product>
-{
-    public bool Equals(Product? x, Product? y)
-    {
-        if (x == y)
-            return true;
-
-        if (x is null && y is not null)
-            return false;
-
-        if (x is not null && y is null)
-            return false;
-
-        return x.Name == y.Name;
-    }
-
-    public int GetHashCode(Product obj)
-    {
-        throw new NotImplementedException();
+        return result;
     }
 }
