@@ -31,102 +31,35 @@ internal class Program
 
         var numbers = new List<int> { -1, 10, 20, 15, -7, 50 };
 
-        var sum = Aggregate(numbers, 0, Sum);
-        var multiple = Aggregate(numbers, 1, Multiply);
+        var sum = numbers.Aggregate(0, Sum);
+        var multiple = Functions.Aggregate(numbers, 1, Multiply);
 
-        var min = FindMin(numbers);
-        min = Aggregate(numbers, numbers[0], (result, number) => number < result ? number : result);
-        var max = Aggregate(numbers, numbers[0], Max);
+        var min = numbers.Aggregate(numbers[0], (result, number) => number < result ? number : result);
 
-        var firstNegative = Find(numbers, number => number < 0);
-        var firstPositive = Find(numbers, number => number > 0);
-        var firstPositiveOdd = Find(numbers, number => number > 0 && number % 2 == 1);
-        var allNegatives = FindAll(numbers, n => n < 0);
+        var firstNegative = numbers.Find(number => number < 0);
+        var firstPositive = numbers.Find(number => number > 0);
+        var firstPositiveOdd = numbers.Find(number => number > 0 && number % 2 == 1);
+        var allNegatives = numbers.FindAll(n => n < 0);
 
         var productService = new ProductService();
         var products = productService.GetProducts();
 
-        var prices = Transform(products, product => product.Price);
-        var totalPrice = Aggregate(prices, 0, (a, b) => a + b);
+        var totalPrice =
 
-        prices = products.ConvertAll(product => product.Price);
-        totalPrice = Aggregate(prices, 0, (a, b) => a + b);
-    }
+            Functions.Aggregate(
+            Functions.Transform(
+                Functions.FindAll(products, product => product.Price > 2000m),
+                product => product.Price),
+            0, (a, b) => a + b);
 
-    private static List<TResult> Transform<TSource, TResult>(List<TSource> source, Func<TSource, TResult> selector)
-    {
-        var result = new List<TResult>();
-        foreach (var item in source)
-        {
-            TResult value = selector(item);
-            result.Add(value);
-        }
-        return result;
-    }
+        totalPrice = products
+            .FindAll(product => product.Price > 2000m)
+            .Transform(product => product.Price)
+            .Sum();
 
-    private static int Min(int result, int number) => number < result ? number : result;
-
-    private static int Max(int result, int number) => number > result ? number : result;
-
-    private static int FindMin(List<int> numbers)
-    {
-        int result = numbers[0];
-
-        foreach (var number in numbers)
-        {
-            result = number < result ? number : result;
-        }
-        return result;
-    }
-
-    private static int FindMax(List<int> numbers)
-    {
-        int result = numbers[0];
-
-        foreach (var number in numbers)
-        {
-            result = number > result ? number : result;
-        }
-        return result;
-    }
-
-    public static T Aggregate<T>(List<T> numbers, T seed, Func<T, T, T> function)
-    {
-        T result = seed;
-
-        foreach (var number in numbers)
-        {
-            result = function(result, number);
-        }
-
-        return result;
-    }
-
-    public static T Find<T>(List<T> collection, Func<T, bool> match)
-    {
-        foreach (var item in collection)
-        {
-            if (match(item))
-            {
-                return item;
-            }
-        }
-
-        return default;
-    }
-
-    public static List<T> FindAll<T>(List<T> collection, Func<T, bool> match)
-    {
-        List<T> result = new List<T>();
-
-        foreach (var item in collection)
-        {
-            if (match(item))
-            {
-                result.Add(item);
-            }
-        }
-
-        return result;
+        totalPrice = products
+             .Where(x => x.Price > 2000m)
+             .Select(x => x.Price)
+             .Sum();
     }
 }
